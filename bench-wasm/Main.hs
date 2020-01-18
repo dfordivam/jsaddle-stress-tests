@@ -1,6 +1,5 @@
 import qualified Tests
-import Language.Javascript.JSaddle.Wasm (run)
-import Reflex.Dom.Core
+import Reflex.Dom
 
 main :: IO ()
-main = run 0 $ mainWidget Tests.main
+main = mainWidget Tests.main
