@@ -19,6 +19,7 @@ library
                , time
   exposed-modules:
     Frontend
+    Tests
   ghc-options: -Wall
 
 executable frontend
