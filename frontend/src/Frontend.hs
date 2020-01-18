@@ -33,11 +33,11 @@ import qualified GHCJS.DOM.Element as DOM
 frontend :: Frontend (R FrontendRoute)
 frontend = Frontend
   { _frontend_head = do
-      el "title" $ text "Obelisk Minimal Example"
-      elAttr "link" ("href" =: static @"main.css" <> "type" =: "text/css" <> "rel" =: "stylesheet") blank
+      el "title" $ text "GHCJS / JSaddle interface Tests"
   , _frontend_body = do
       prerender (pure ()) $ do
         throughputTest
+        el "hr" blank
         websocketMsgThroughput
       return ()
   }
@@ -51,10 +51,11 @@ readInt = readMay . T.unpack
 showTime lbl = el "p" $ do
   t <- liftIO getCurrentTime
   text (lbl <> " : " <> tshow t)
+  pure t
 
 throughputTest :: (_) => m ()
 throughputTest = do
-  el "h3" $ text "DOM API call throughput test"
+  el "h3" $ text "Throughput Test: DOM API Calls"
   startEv <- do
     el "p" $ text "Enter number of requests to do"
     v <- value <$> textInput (def & textInputConfig_initialValue .~ "10000")
@@ -62,22 +63,26 @@ throughputTest = do
     let vInt = tag (current $ readInt <$> v) ev
     pure (fmapMaybe id vInt)
 
-  let showTime lbl = el "p" $ do
-        t <- liftIO getCurrentTime
-        text (lbl <> " : " <> tshow t)
   widgetHold_ blank $ ffor startEv $ \limit -> mdo
     el "p" $ do
       let attr = ffor cnt $ \v -> ("max" =: tshow limit) <> ("value" =: tshow v)
       elDynAttr "progress" attr blank
+      el "div" $ do
+        text "("
+        dynText $ tshow <$> cnt
+        text ")"
     cnt <- count newValEv
     (e,_) <- el' "p" $ do
       someVal <- holdDyn 0 newValEv
+      text "Some random number :"
       display someVal
     pb <- getPostBuild
     let triggerEv = gate (current $ fmap (\c -> c < limit) cnt) (leftmost [pb, () <$ newValEv])
         doneEv = gate (current $ fmap (\c -> c == limit) cnt) (leftmost [() <$ newValEv])
-    showTime "Start Time"
-    widgetHold blank $ ffor doneEv $ \_ -> showTime "Done Time"
+    startTime <- showTime "Start Time"
+    widgetHold blank $ ffor doneEv $ \_ -> do
+      doneTime <- showTime "Done Time"
+      text $ "Time Elapsed : " <> (tshow $ diffUTCTime doneTime startTime)
 
     -- Test
     newValEv <- performEvent $ ffor triggerEv $ \_ -> do
@@ -89,29 +94,38 @@ throughputTest = do
 
 websocketMsgThroughput :: (_) => m ()
 websocketMsgThroughput = do
-  el "h3" $ text "websocket msg throughput test"
+  el "h3" $ text "Stress Test: Incoming Websocket Messages"
+
+  el "p" $ text "WebSocket URL"
+  uriVal <- value <$> textInput (def & textInputConfig_initialValue .~ "ws://localhost:8000/wstest")
+
   startEv <- do
-    el "p" $ text "Enter number of msgs and delay to receive"
+    el "p" $ text "Enter the number of messages to receive"
     v <- value <$> textInput (def & textInputConfig_initialValue .~ "1000")
+    el "p" $ text "Delay between each message (in microseconds)"
     d <- value <$> textInput (def & textInputConfig_initialValue .~ "10000")
-    text "milliseconds"
     ev <- button "Start"
     let vInt = tag (current $ liftA2 (,) <$> (readInt <$> v) <*> (readInt <$> d)) ev
     pure (fmapMaybe id vInt)
 
-  uriVal <- value <$> textInput (def & textInputConfig_initialValue .~ "ws://localhost:8000/wstest")
   widgetHold_ blank $ ffor (attach (current uriVal) startEv) $ \(uri, (limit, delay)) -> mdo
     el "p" $ do
       let attr = ffor cnt $ \v -> ("max" =: tshow limit) <> ("value" =: tshow v)
       elDynAttr "progress" attr blank
+      el "div" $ do
+        text "("
+        dynText $ tshow <$> cnt
+        text ")"
     cnt <- count newValEv
     (e,_) <- el' "p" $ do
       someVal <- holdDyn 0 newValEv
       display someVal
     let
       doneEv = gate (current $ fmap (\c -> c == limit) cnt) (leftmost [() <$ newValEv])
-    showTime "Start Time"
-    widgetHold blank $ ffor doneEv $ \_ -> showTime "Done Time"
+    startTime <- showTime "Start Time"
+    widgetHold blank $ ffor doneEv $ \_ -> do
+      doneTime <- showTime "Done Time"
+      text $ "Time Elapsed : " <> (tshow $ diffUTCTime doneTime startTime)
 
     -- Test
     let newValEv = fmapMaybe (\t -> readMay (T.unpack t)) recvEv
