@@ -1,8 +1,8 @@
 {
   "owner": "obsidiansystems",
   "repo": "obelisk",
-  "branch": "dn-jsaddle-core2-2",
+  "branch": "dn-jsaddle-core2-2-wasm",
   "private": false,
-  "rev": "bdd2dec5d28d9d4b048c6d86a12058237fa09496",
-  "sha256": "1lmqn6jdj1qdsq51b6falgr6yvf2y944vbnbrxfcryn1gsy4kg5l"
+  "rev": "b4465eac41ca0e899416d5c3f2034ce1219fe52c",
+  "sha256": "0lv79vhcdvbn9712rp4i4328gpwb3qmbqzcb9670n7myr48g94fy"
 }
